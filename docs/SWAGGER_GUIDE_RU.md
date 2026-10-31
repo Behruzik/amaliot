@@ -59,7 +59,7 @@ Swagger не сохраняет авторизацию после закрыти
 
 ### Начать
 
-В `POST /api/tests/categories/{categoryId}/attempts` вставьте `professionId` из вашего профиля. Ожидается **200**, статус `IN_PROGRESS`, 40 вопросов.
+В `POST /api/tests/categories/{categoryId}/attempts` вставьте `professionId` из вашего профиля. Ожидается **200**, статус `IN_PROGRESS`, 16 случайных вопросов из общего банка.
 
 Сохраните из ответа:
 

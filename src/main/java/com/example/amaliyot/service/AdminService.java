@@ -2,6 +2,7 @@ package com.example.amaliyot.service;
 
 import com.example.amaliyot.domain.AnswerType;
 import com.example.amaliyot.domain.AttemptStatus;
+import com.example.amaliyot.domain.Difficulty;
 import com.example.amaliyot.domain.Entities.*;
 import com.example.amaliyot.domain.Role;
 import com.example.amaliyot.repository.*;
@@ -139,7 +140,9 @@ public class AdminService {
 
     @Transactional
     public CategoryView createCategory(CategoryRequest request, Long actorId) {
-        Category category = new Category(); apply(category, request); categories.save(category);
+        Category category = new Category(); apply(category, request);
+        UserAccount actor = findUser(actorId);
+        category.setCreatedBy(actor); category.setUpdatedBy(actor); categories.save(category);
         log(actorId, "CATEGORY_CREATED", "CATEGORY", category.getId(), null);
         return toView(category);
     }
@@ -147,6 +150,10 @@ public class AdminService {
     @Transactional
     public CategoryView updateCategory(Long id, CategoryRequest request, Long actorId) {
         Category category = findCategory(id); apply(category, request);
+        UserAccount actor = findUser(actorId);
+        category.setUpdatedBy(actor);
+        if (request.active()) { category.setDeletedBy(null); category.setDeletedAt(null); }
+        else { category.setDeletedBy(actor); category.setDeletedAt(java.time.Instant.now()); }
         log(actorId, "CATEGORY_UPDATED", "CATEGORY", id, null);
         return toView(category);
     }
@@ -154,15 +161,20 @@ public class AdminService {
     @Transactional
     public void archiveCategory(Long id, Long actorId) {
         Category category = findCategory(id); category.setActive(false);
+        category.setDeletedBy(findUser(actorId)); category.setDeletedAt(java.time.Instant.now());
         log(actorId, "CATEGORY_DEACTIVATED", "CATEGORY", id, null);
     }
 
     @Transactional(readOnly = true)
-    public Page<QuestionView> questions(Long categoryId, String search, int page, int size) {
+    public Page<QuestionView> questions(Long categoryId, String search, AnswerType type, Difficulty difficulty,
+                                        int page, int size) {
         Specification<Question> spec = (root, query, cb) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
-            if (categoryId != null) predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            if (categoryId != null) predicates.add(cb.or(cb.equal(root.get("category").get("id"), categoryId),
+                    cb.isTrue(root.get("globalPool"))));
             if (search != null && !search.isBlank()) predicates.add(cb.like(cb.lower(root.get("body")), "%" + search.trim().toLowerCase(Locale.ROOT) + "%"));
+            if (type != null) predicates.add(cb.equal(root.get("answerType"), type));
+            if (difficulty != null) predicates.add(cb.equal(root.get("difficulty"), difficulty));
             return cb.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
         };
         return questions.findAll(spec, pageRequest(page, size, "id")).map(this::toQuestionView);
@@ -197,16 +209,26 @@ public class AdminService {
     }
 
     @Transactional
+    public CategoryView setCategoryImage(Long id, String imageUrl, Long actorId) {
+        Category category = findCategory(id);
+        category.setImageUrl(imageUrl);
+        category.setUpdatedBy(findUser(actorId));
+        log(actorId, "CATEGORY_IMAGE_UPDATED", "CATEGORY", id, null);
+        return toView(category);
+    }
+
+    @Transactional
     public void archiveQuestion(Long id, Long actorId) {
         Question question = findQuestion(id); question.setActive(false); question.setEditor(findUser(actorId));
         log(actorId, "QUESTION_DEACTIVATED", "QUESTION", id, null);
     }
 
     private void apply(Question question, QuestionRequest request) {
-        Category category = findCategory(request.categoryId());
-        String difficulty = request.difficulty().trim().toUpperCase(Locale.ROOT);
-        if (!Set.of("EASY", "MEDIUM", "HARD").contains(difficulty)) throw ApiException.badRequest("INVALID_DIFFICULTY", "Difficulty must be EASY, MEDIUM, or HARD");
-        question.setCategory(category); question.setBody(request.body().trim());
+        Category category = request.categoryId() == null ? null : findCategory(request.categoryId());
+        if (!request.globalPool() && category == null)
+            throw ApiException.badRequest("CATEGORY_REQUIRED", "Choose a category for a non-global question");
+        Difficulty difficulty = request.difficulty();
+        question.setCategory(category); question.setGlobalPool(request.globalPool()); question.setBody(request.body().trim());
         question.setImageUrl(clean(request.imageUrl())); question.setDifficulty(difficulty); question.setAnswerType(request.answerType());
         if (request.answerType() == AnswerType.NUMERIC) {
             if (request.numericAnswer() == null) throw ApiException.badRequest("NUMERIC_ANSWER_REQUIRED", "Numeric questions need an expected value");
@@ -354,12 +376,25 @@ public class AdminService {
     private static CategoryView toView(Category category) {
         return new CategoryView(category.getId(), category.getName(), category.getDescription(), category.getImageUrl(),
                 category.isActive(), category.getDurationMinutes(), category.getQuestionCount(),
-                category.getAdditionalQuestionCount(), category.getRetakeDelayHours());
+                category.getAdditionalQuestionCount(), category.getRetakeDelayHours(),
+                category.getCreatedBy() == null ? null : category.getCreatedBy().getId(),
+                category.getUpdatedBy() == null ? null : category.getUpdatedBy().getId(),
+                category.getDeletedBy() == null ? null : category.getDeletedBy().getId(),
+                displayName(category.getCreatedBy()), displayName(category.getUpdatedBy()), displayName(category.getDeletedBy()),
+                category.getCreatedAt(), category.getUpdatedAt(), category.getDeletedAt());
+    }
+    private static String displayName(UserAccount user) {
+        if (user == null) return null;
+        String name = String.join(" ", java.util.stream.Stream.of(user.getFirstName(), user.getLastName())
+                .filter(value -> value != null && !value.isBlank()).toList()).trim();
+        return name.isBlank() ? user.getNickname() : name;
     }
     private QuestionView toQuestionView(Question question) {
-        return new QuestionView(question.getId(), question.getCategory().getId(), question.getBody(), question.getImageUrl(),
+        return new QuestionView(question.getId(), question.getCategory() == null ? null : question.getCategory().getId(),
+                question.getBody(), question.getImageUrl(),
                 question.getDifficulty(), question.getAnswerType(), question.getNumericAnswer(), question.getNumericTolerance(),
-                question.isActive(), question.getOptions().stream().map(o -> new OptionView(o.getId(), o.getLabel(), o.getImageUrl(), o.isCorrect())).toList(),
-                question.getAuthor() == null ? null : question.getAuthor().getId(), question.getEditor() == null ? null : question.getEditor().getId());
+                question.isActive(), question.isGlobalPool(), question.getOptions().stream().map(o -> new OptionView(o.getId(), o.getLabel(), o.getImageUrl(), o.isCorrect())).toList(),
+                question.getAuthor() == null ? null : question.getAuthor().getId(), question.getEditor() == null ? null : question.getEditor().getId(),
+                question.getAuthor() == null ? "System" : displayName(question.getAuthor()), displayName(question.getEditor()));
     }
 }

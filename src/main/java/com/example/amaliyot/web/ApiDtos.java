@@ -3,6 +3,7 @@ package com.example.amaliyot.web;
 import com.example.amaliyot.domain.AnswerType;
 import com.example.amaliyot.domain.AttemptStatus;
 import com.example.amaliyot.domain.ContentType;
+import com.example.amaliyot.domain.Difficulty;
 import com.example.amaliyot.domain.Role;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -70,21 +71,27 @@ public final class ApiDtos {
                                   @Size(max = 500) String imageUrl,
                                   boolean active,
                                   @Min(1) @Max(600) int durationMinutes,
-                                  @Min(40) @Max(40) int questionCount,
-                                  @Min(0) @Max(0) int additionalQuestionCount,
-                                  @Min(0) @Max(8760) int retakeDelayHours) {}
+                                  @Min(16) @Max(16) @Schema(description = "Har bir urinishda beriladigan savollar soni", example = "16") int questionCount,
+                                  @Min(0) @Max(400) int additionalQuestionCount,
+                                  @Min(0) @Max(8760) @Schema(description = "Qayta topshirish oralig‘i soatlarda; 1 kun = 24 soat", example = "72") int retakeDelayHours) {}
     public record CategoryView(Long id, String name, String description, String imageUrl, boolean active,
                                int durationMinutes, int questionCount, int additionalQuestionCount,
-                               int retakeDelayHours) {}
+                               int retakeDelayHours, Long createdById, Long updatedById,
+                               Long deletedById, String createdByName, String updatedByName,
+                               String deletedByName, Instant createdAt, Instant updatedAt, Instant deletedAt) {}
     public record OptionInput(@Size(max = 2000) String label, @Size(max = 500) String imageUrl, boolean correct) {}
-    public record QuestionRequest(@NotNull Long categoryId, @NotBlank @Size(max = 5000) String body,
-                                  @Size(max = 500) String imageUrl, @NotBlank @Size(max = 16) String difficulty,
+    public record QuestionRequest(@Schema(description = "Savol global bo‘lsa null yuboring") Long categoryId,
+                                  @NotBlank @Size(max = 5000) String body,
+                                  @Size(max = 500) String imageUrl, @NotNull Difficulty difficulty,
                                   @NotNull AnswerType answerType, @Digits(integer = 14, fraction = 6) BigDecimal numericAnswer,
                                   @DecimalMin("0") @Digits(integer = 14, fraction = 6) BigDecimal numericTolerance,
-                                  @Size(max = 20) List<@NotNull @Valid OptionInput> options) {}
-    public record QuestionView(Long id, Long categoryId, String body, String imageUrl, String difficulty,
+                                  @Size(max = 20) List<@NotNull @Valid OptionInput> options,
+                                  @Schema(description = "true bo‘lsa savol barcha kategoriyalar uchun umumiy bankka qo‘shiladi")
+                                  boolean globalPool) {}
+    public record QuestionView(Long id, Long categoryId, String body, String imageUrl, Difficulty difficulty,
                                AnswerType answerType, BigDecimal numericAnswer, BigDecimal numericTolerance,
-                               boolean active, List<OptionView> options, Long authorId, Long editorId) {}
+                               boolean active, boolean globalPool, List<OptionView> options, Long authorId, Long editorId,
+                               String authorName, String editorName) {}
     public record OptionView(Long id, String label, String imageUrl, Boolean correct) {}
 
     @Schema(description = "SINGLE/MULTIPLE: ID вариантов из текущей попытки. NUMERIC: только numericValue. Пустой ответ очищает выбор.")

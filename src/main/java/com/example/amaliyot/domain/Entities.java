@@ -1,6 +1,7 @@
 package com.example.amaliyot.domain;
 
 import jakarta.persistence.*;
+import com.example.amaliyot.domain.Difficulty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -118,6 +119,17 @@ public final class Entities {
         private int additionalQuestionCount;
         @Column(name = "retake_delay_hours", nullable = false)
         private int retakeDelayHours;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "created_by_id")
+        private UserAccount createdBy;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "updated_by_id")
+        private UserAccount updatedBy;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "deleted_by_id")
+        private UserAccount deletedBy;
+        @Column(name = "deleted_at")
+        private Instant deletedAt;
         @Column(name = "created_at", nullable = false, updatable = false)
         private Instant createdAt;
         @Column(name = "updated_at", nullable = false)
@@ -199,15 +211,17 @@ public final class Entities {
     public static class Question {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
-        @ManyToOne(fetch = FetchType.LAZY, optional = false)
-        @JoinColumn(name = "category_id", nullable = false)
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "category_id")
         private Category category;
         @Column(nullable = false, length = 5000)
         private String body;
         @Column(name = "image_url", length = 500)
         private String imageUrl;
-        @Column(nullable = false, length = 16)
-        private String difficulty = "MEDIUM";
+        @Enumerated(EnumType.STRING) @Column(nullable = false, length = 16)
+        private Difficulty difficulty = Difficulty.MEDIUM;
+        @Column(name = "global_pool", nullable = false)
+        private boolean globalPool;
         @Enumerated(EnumType.STRING) @Column(name = "answer_type", nullable = false, length = 16)
         private AnswerType answerType;
         @Column(name = "numeric_answer", precision = 20, scale = 6)

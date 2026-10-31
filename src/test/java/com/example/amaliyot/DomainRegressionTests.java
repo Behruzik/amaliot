@@ -1,6 +1,7 @@
 package com.example.amaliyot;
 
 import com.example.amaliyot.domain.AnswerType;
+import com.example.amaliyot.domain.Difficulty;
 import com.example.amaliyot.domain.AttemptStatus;
 import com.example.amaliyot.domain.Entities.*;
 import com.example.amaliyot.repository.CategoryRepository;
@@ -177,8 +178,8 @@ class DomainRegressionTests {
     void replacingQuestionOptionsReturnsPersistedIdsImmediately() {
         Seed seed = seed(AnswerType.SINGLE);
         Long questionId = tx().execute(status -> questions.findByCategoryIdAndActiveTrue(seed.categoryId()).get(0).getId());
-        QuestionRequest edit = new QuestionRequest(seed.categoryId(), "Updated question", null, "EASY", AnswerType.SINGLE,
-                null, null, List.of(new OptionInput("New correct", null, true), new OptionInput("New wrong", null, false)));
+        QuestionRequest edit = new QuestionRequest(seed.categoryId(), "Updated question", null, Difficulty.EASY, AnswerType.SINGLE,
+                null, null, List.of(new OptionInput("New correct", null, true), new OptionInput("New wrong", null, false)), false);
         QuestionView updated = admin.updateQuestion(questionId, edit, seed.userId());
         assertEquals(2, updated.options().size());
         assertTrue(updated.options().stream().allMatch(option -> option.id() != null));

@@ -47,8 +47,8 @@ public class ProfileService {
             activeSeconds += Math.max(0, Duration.between(user.getActiveSince(), now).getSeconds());
         var userAttempts = attempts.findByUserId(id);
         var completed = userAttempts.stream().filter(a -> a.getStatus() != com.example.amaliyot.domain.AttemptStatus.IN_PROGRESS).toList();
-        long passed = completed.stream().filter(a -> a.getTotalQuestions() == CertificateService.EXAM_QUESTION_COUNT
-                && a.getCorrectAnswers() >= CertificateService.PASSING_CORRECT_ANSWERS
+        long passed = completed.stream().filter(a -> a.getTotalQuestions() > 0
+                && a.getCorrectAnswers() >= CertificateService.passingCorrectAnswers(a.getTotalQuestions())
                 && a.getStatus() != com.example.amaliyot.domain.AttemptStatus.CANCELLED
                 && a.getStatus() != com.example.amaliyot.domain.AttemptStatus.EXPIRED).count();
         var directions = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);

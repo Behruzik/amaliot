@@ -19,7 +19,7 @@ public class TestController {
     private final AttemptService attempts;
     public TestController(AttemptService attempts) { this.attempts = attempts; }
 
-    @Operation(summary = "40 savollik imtihonni boshlash", description = "Profilingizda tanlangan kasb yo‘nalishidagi testni boshlaydi. Yo‘nalishda 40 ta faol savol bo‘lishi kerak. Kamida 35 ta to‘g‘ri javob sertifikat beradi.")
+    @Operation(summary = "16 savollik imtihonni boshlash", description = "Tanlangan kategoriya bo‘yicha umumiy bankdagi 400 ta oson savoldan 16 tasini tasodifiy tanlaydi. Kamida 14 ta to‘g‘ri javob sertifikat beradi.")
     @PostMapping("/categories/{categoryId}/attempts")
     public AttemptView start(@AuthenticationPrincipal AuthPrincipal principal, @PathVariable Long categoryId) {
         return attempts.start(principal.userId(), categoryId);
@@ -50,7 +50,7 @@ public class TestController {
                               @PathVariable Long questionId, @Valid @RequestBody AnswerRequest request) {
         return attempts.answer(principal.userId(), attemptId, questionId, request);
     }
-    @Operation(summary = "Imtihonni yakunlash", description = "40 savoldan kamida 35 tasi to‘g‘ri bo‘lsa, sertifikat avtomatik beriladi. Ball serverda hisoblanadi; takroriy yakunlash natijani o‘zgartirmaydi.")
+    @Operation(summary = "Imtihonni yakunlash", description = "16 savoldan kamida 14 tasi to‘g‘ri bo‘lsa, sertifikat avtomatik beriladi. Ball serverda hisoblanadi; takroriy yakunlash natijani o‘zgartirmaydi.")
     @PostMapping("/attempts/{attemptId}/finish")
     public ResultView finish(@AuthenticationPrincipal AuthPrincipal principal, @PathVariable Long attemptId) {
         return attempts.finish(principal.userId(), attemptId);

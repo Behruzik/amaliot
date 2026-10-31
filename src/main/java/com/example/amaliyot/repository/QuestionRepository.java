@@ -1,5 +1,6 @@
 package com.example.amaliyot.repository;
 
+import com.example.amaliyot.domain.Difficulty;
 import com.example.amaliyot.domain.Entities.Question;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
     List<Question> findByCategoryIdInAndActiveTrue(Collection<Long> categoryIds);
     @EntityGraph(attributePaths = {"options", "category"})
     Optional<Question> findWithOptionsById(Long id);
+    @EntityGraph(attributePaths = "options")
+    List<Question> findByGlobalPoolTrueAndActiveTrueAndDifficulty(Difficulty difficulty);
+    long countByGlobalPoolTrueAndActiveTrueAndDifficulty(Difficulty difficulty);
 }

@@ -1,6 +1,7 @@
 package com.example.amaliyot;
 
 import com.example.amaliyot.domain.AnswerType;
+import com.example.amaliyot.domain.Difficulty;
 import com.example.amaliyot.domain.AttemptStatus;
 import com.example.amaliyot.domain.Entities.*;
 import com.example.amaliyot.domain.Role;
@@ -203,7 +204,7 @@ class BackendWorkflowTests {
         categories.saveAndFlush(category);
         for (int i = 0; i < 40; i++) {
             Question question = new Question(); question.setCategory(category); question.setBody("Choose the correct answer " + i);
-            question.setDifficulty("EASY"); question.setAnswerType(AnswerType.SINGLE);
+            question.setDifficulty(Difficulty.EASY); question.setAnswerType(AnswerType.SINGLE);
             AnswerOption correct = new AnswerOption(); correct.setLabel("Correct"); correct.setCorrect(true); correct.setQuestion(question);
             AnswerOption wrong = new AnswerOption(); wrong.setLabel("Wrong"); wrong.setCorrect(false); wrong.setQuestion(question);
             question.getOptions().add(correct); question.getOptions().add(wrong);

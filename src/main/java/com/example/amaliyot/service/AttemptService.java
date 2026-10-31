@@ -44,10 +44,6 @@ public class AttemptService {
         UserAccount user = users.findByIdForUpdate(userId).orElseThrow(() -> ApiException.notFound("USER_NOT_FOUND", "User was not found"));
         Category category = categories.findById(categoryId).orElseThrow(() -> ApiException.notFound("CATEGORY_NOT_FOUND", "Category was not found"));
         if (!category.isActive()) throw ApiException.conflict("CATEGORY_INACTIVE", "This category is not accepting attempts");
-        if (user.getProfessionCategory() == null)
-            throw ApiException.conflict("PROFILE_PROFESSION_REQUIRED", "Choose your profession in the profile before starting a test");
-        if (!user.getProfessionCategory().getId().equals(categoryId))
-            throw ApiException.forbidden("PROFESSION_CATEGORY_MISMATCH", "You can only take tests for your selected profession");
         if (user.getFirstName() == null || user.getFirstName().isBlank() || user.getLastName() == null || user.getLastName().isBlank()
                 || user.getBirthDate() == null || user.getRegion() == null || user.getRegion().isBlank()
                 || user.getDistrict() == null || user.getDistrict().isBlank() || user.getAddress() == null || user.getAddress().isBlank()
@@ -70,7 +66,7 @@ public class AttemptService {
             }
         }
 
-        List<Question> selected = selectQuestions(category);
+        List<Question> selected = selectQuestions(category, userId);
         // Both supported databases persist timestamps at microsecond precision.
         // Match that precision before returning DTOs so a later GET is identical.
         Instant started = Instant.now().truncatedTo(ChronoUnit.MICROS);
@@ -82,7 +78,7 @@ public class AttemptService {
         for (Question source : selected) {
             AttemptQuestion snapshot = new AttemptQuestion();
             snapshot.setAttempt(attempt); snapshot.setSourceQuestionId(source.getId());
-            snapshot.setSourceCategoryId(source.getCategory().getId()); snapshot.setBody(source.getBody());
+            snapshot.setSourceCategoryId(category.getId()); snapshot.setBody(source.getBody());
             snapshot.setImageUrl(source.getImageUrl()); snapshot.setAnswerType(source.getAnswerType());
             snapshot.setNumericAnswer(source.getNumericAnswer()); snapshot.setNumericTolerance(
                     source.getNumericTolerance() == null ? BigDecimal.ZERO : source.getNumericTolerance());
@@ -99,14 +95,25 @@ public class AttemptService {
         return toAttemptView(attempt);
     }
 
-    private List<Question> selectQuestions(Category category) {
-        List<Question> inCategory = new ArrayList<>(questions.findByCategoryIdAndActiveTrue(category.getId()));
-        Collections.shuffle(inCategory);
-        if (inCategory.size() < CertificateService.EXAM_QUESTION_COUNT) {
+    private List<Question> selectQuestions(Category category, Long userId) {
+        List<Question> pool = new ArrayList<>(questions.findByGlobalPoolTrueAndActiveTrueAndDifficulty(
+                com.example.amaliyot.domain.Difficulty.EASY));
+        // Keeps isolated legacy/test databases usable; a fresh non-test database is
+        // populated with the shared bank by GlobalEasyQuestionSeeder at startup.
+        if (pool.isEmpty()) pool.addAll(questions.findByCategoryIdAndActiveTrue(category.getId()));
+        if (pool.size() < category.getQuestionCount()) {
             throw ApiException.conflict("QUESTION_BANK_INSUFFICIENT",
-                    "The direction needs at least 40 active questions to start an exam");
+                    "The shared easy question bank does not contain enough active questions");
         }
-        return new ArrayList<>(inCategory.subList(0, CertificateService.EXAM_QUESTION_COUNT));
+        attempts.findByUserId(userId).stream().max(Comparator.comparing(TestAttempt::getCreatedAt))
+                .ifPresent(previous -> attempts.findWithSnapshotById(previous.getId()).ifPresent(snapshot -> {
+                    Set<Long> previousIds = snapshot.getQuestions().stream().map(AttemptQuestion::getSourceQuestionId)
+                            .filter(Objects::nonNull).collect(Collectors.toSet());
+                    if (pool.size() - previousIds.size() >= category.getQuestionCount())
+                        pool.removeIf(question -> previousIds.contains(question.getId()));
+                }));
+        Collections.shuffle(pool);
+        return new ArrayList<>(pool.subList(0, category.getQuestionCount()));
     }
 
     @Transactional

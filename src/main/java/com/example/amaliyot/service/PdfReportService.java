@@ -81,8 +81,8 @@ public class PdfReportService {
                     }
                     layout.space(10);
                 }
-                layout.paragraph("Порог выдачи сертификата: " + CertificateService.PASSING_CORRECT_ANSWERS
-                        + " правильных ответов из " + CertificateService.EXAM_QUESTION_COUNT
+                layout.paragraph("Порог выдачи сертификата: " + CertificateService.passingCorrectAnswers(result.totalQuestions())
+                        + " правильных ответов из " + result.totalQuestions()
                         + ". Сертификаты доступны в разделе «Мои сертификаты».", 9, MUTED, 9);
                 layout.paragraph("Документ содержит результат на момент выгрузки. Статус сертификата проверяется отдельно по его номеру.",
                         9, MUTED, 0);
