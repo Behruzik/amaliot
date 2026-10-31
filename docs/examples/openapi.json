@@ -1,0 +1,6587 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GEADEZIST: тесты, результаты и сертификаты",
+    "description": "## Быстрая проверка через Swagger\n\n1. Выполните **POST /api/auth/login**. Для локального профиля `demo` выберите пример `demoUser`.\n2. Скопируйте `accessToken` из ответа. Нажмите **Authorize**, вставьте **только токен, без слова Bearer**, затем Authorize и Close.\n3. Выполните **GET /api/profile**: здесь находятся ваш `id` и выбранный `professionId`.\n4. Выполните **GET /api/tests/results**, возьмите `content[].id` и подставьте в **GET /api/tests/results/{attemptId}/pdf**.\n5. Нажмите **Execute → Download file** и откройте полученный PDF. `download=true` включает скачивание как вложения.\n6. Проверьте **GET /api/certificates** и PDF сертификата по возвращённому `certificateNumber`.\n\n## Пройти тест самостоятельно\n\nПрофиль должен содержать имя, фамилию, дату рождения, регион, район, адрес, согласие с офертой и `professionId` из **GET /api/professions**.\nНазвания региона и района берите из **GET /api/locations/regions** и **GET /api/locations/regions/{regionId}/districts**.\nЗапустите **POST /api/tests/categories/{categoryId}/attempts**, где `categoryId` равен вашему `professionId`.\nСохраняйте ответы через **PUT /api/tests/attempts/{attemptId}/questions/{questionId}/answer**.\n`questionId` и `selectedOptionIds` берите из **этой попытки** (`questions[].id` и `questions[].options[].id`).\nДля NUMERIC отправляйте `numericValue`; для SINGLE/MULTIPLE - `selectedOptionIds`.\nЗатем **POST /api/tests/attempts/{attemptId}/finish**. Повторный finish не меняет итог.\nЭкзамен содержит 40 вопросов; 35 правильных ответов дают сертификат, если попытка не просрочена и не отменена.\nСохранение попытки не останавливает таймер.\n\n## Локальный демонстрационный режим\n\nЗапуск в PowerShell: `.\\mvnw.cmd \"-Dspring-boot.run.profiles=demo\" spring-boot:run`.\nПользователь: `student.demo@gmail.com` / `DemoUser123!`.\nАдминистратор: `admin.demo@example.test` / `DemoAdmin123!`.\nВ demo уже есть готовый профиль, результат 38/40 и сертификат. Эти учётные данные работают только в профиле `demo`.\nДля проверки прав попробуйте **GET /api/admin/dashboard** под USER (403), затем войдите под ADMIN и замените токен в Authorize (200).\n\n## Как понимать ответы\n\n`400` - ошибка входных данных; `401` - нужен действующий JWT; `403` - недостаточно прав;\n`404` - объект не найден или принадлежит другому пользователю; `409` - конфликт состояния (например, незавершённый тест);\n`429` - слишком много попыток входа; `503` у восстановления пароля означает, что SMS/email-провайдер пока не настроен.\nОшибки возвращаются в JSON даже для PDF. Обычная адресная строка браузера JWT не отправляет: скачивайте через Swagger или клиент с заголовком Authorization.\nID примеров не фиксированы: всегда используйте значения, возвращённые вашей базой данных.\n",
+    "version": "1.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8087",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Testlar va natijalar",
+      "description": "Test urinishlari, javoblarni saqlash va foydalanuvchi natijalari"
+    },
+    {
+      "name": "Manzil katalogini boshqarish",
+      "description": "ADMIN viloyat va tumanlarni qo‘shadi, tahrirlaydi yoki faol holatini o‘zgartiradi."
+    },
+    {
+      "name": "Tavsiyalar",
+      "description": "Foydalanuvchining kasbiga mos testlar"
+    },
+    {
+      "name": "Qayta aloqa",
+      "description": "Foydalanuvchi murojaatlari va Support Team javoblari"
+    },
+    {
+      "name": "Profil",
+      "description": "Joriy foydalanuvchining profili va avatarini boshqarish"
+    },
+    {
+      "name": "Sahifa matnlarini boshqarish",
+      "description": "ABOUT_WE va LOGIN_PAGE kontentlarini xavfsiz boshqarish"
+    },
+    {
+      "name": "Sertifikatlar",
+      "description": "Yo‘nalish imtihonidan o‘tgan foydalanuvchi sertifikatlari"
+    },
+    {
+      "name": "Kasblar",
+      "description": "Profil uchun kasb tanlash katalogi"
+    },
+    {
+      "name": "Profil",
+      "description": "Мой профиль, профессия и статистика"
+    },
+    {
+      "name": "Kategoriyalar",
+      "description": "Foydalanuvchilar uchun faol test kategoriyalari"
+    },
+    {
+      "name": "Autentifikatsiya",
+      "description": "Регистрация, вход, выход и смена пароля"
+    },
+    {
+      "name": "Admin — Boshqaruv paneli",
+      "description": "Umumiy tizim statistikasi"
+    },
+    {
+      "name": "PDF: результаты и сертификаты",
+      "description": "Открытие или скачивание PDF текущего пользователя"
+    },
+    {
+      "name": "Ommaviy sahifa matnlari",
+      "description": "Kirish va Biz haqimizda sahifalari uchun administrator kiritgan matnlar"
+    },
+    {
+      "name": "Admin — Savollar",
+      "description": "Savol banki va savollarga tegishli rasmlarni boshqarish"
+    },
+    {
+      "name": "PDF: результаты и сертификаты",
+      "description": "Открыть или скачать PDF своего результата и сертификата"
+    },
+    {
+      "name": "Admin — Foydalanuvchilar",
+      "description": "User, Staff va akkaunt rollarini boshqarish"
+    },
+    {
+      "name": "Manzillar",
+      "description": "Ro‘yxatdan o‘tish va profil formalaridagi faol viloyat/tuman katalogi"
+    },
+    {
+      "name": "Autentifikatsiya",
+      "description": "Ro‘yxatdan o‘tish, tizimga kirish va parol amallari"
+    },
+    {
+      "name": "Admin — Kategoriyalar",
+      "description": "Imtihon yo‘nalishlarini yaratish, tahrirlash va arxivlash"
+    },
+    {
+      "name": "Admin — Imtihon natijalari",
+      "description": "Natijalarni qidirish, arxivlash va ko‘rib chiqish"
+    },
+    {
+      "name": "Sertifikatlar",
+      "description": "Мои сертификаты и публичная проверка номера"
+    },
+    {
+      "name": "Testlar va natijalar",
+      "description": "Начать тест, сохранить ответы, завершить и посмотреть результат"
+    }
+  ],
+  "paths": {
+    "/api/tests/attempts/{attemptId}/questions/{questionId}/answer": {
+      "put": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "Сохранить или заменить ответ",
+        "description": "SINGLE: один ID, MULTIPLE: несколько ID из questions[].options[].id текущей попытки. NUMERIC: число в numericValue. Не смешивайте число и варианты. Пустой selectedOptionIds очищает выбранные варианты.",
+        "operationId": "answer",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "description": "ID из ответа запуска теста либо content[].id из GET /api/tests/results",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "questionId",
+            "in": "path",
+            "description": "questions[].id из текущей попытки; это ID снимка вопроса",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerRequest"
+              },
+              "examples": {
+                "numeric": {
+                  "summary": "Числовой ответ: только для NUMERIC",
+                  "value": {
+                    "numericValue": 12.5
+                  }
+                },
+                "clearChoice": {
+                  "summary": "Очистить ответ SINGLE/MULTIPLE",
+                  "value": {
+                    "selectedOptionIds": []
+                  }
+                }
+              },
+              "example": null
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Состояние попытки не позволяет выполнить действие",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users/{userId}": {
+      "put": {
+        "tags": [
+          "Admin — Foydalanuvchilar"
+        ],
+        "summary": "Foydalanuvchi ma’lumotlarini tahrirlash",
+        "description": "Akkauntga ADMIN rolini faqat SUPER_ADMIN bera oladi.",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/questions/{id}": {
+      "get": {
+        "tags": [
+          "Admin — Savollar"
+        ],
+        "summary": "Savol tafsilotini ko‘rish",
+        "operationId": "question",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Admin — Savollar"
+        ],
+        "summary": "Savolni tahrirlash",
+        "operationId": "updateQuestion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Admin — Savollar"
+        ],
+        "summary": "Savolni arxivlash",
+        "description": "Savolni o‘chirmasdan faol holatini o‘chiradi.",
+        "operationId": "archiveQuestion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/locations/regions/{id}": {
+      "put": {
+        "tags": [
+          "Manzil katalogini boshqarish"
+        ],
+        "summary": "Viloyatni yangilash",
+        "operationId": "updateRegion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Manzil katalogini boshqarish"
+        ],
+        "summary": "Viloyatni o‘chirish",
+        "description": "Tarixiy profil ma’lumotlarini saqlab, viloyatni katalogdan nofaol qiladi.",
+        "operationId": "deactivateRegion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/locations/districts/{id}": {
+      "put": {
+        "tags": [
+          "Manzil katalogini boshqarish"
+        ],
+        "summary": "Tumanni yangilash",
+        "operationId": "updateDistrict",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistrictRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistrictView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Manzil katalogini boshqarish"
+        ],
+        "summary": "Tumanni o‘chirish",
+        "description": "Tumanni fizik o‘chirmasdan nofaol qiladi.",
+        "operationId": "deactivateDistrict",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/content/{type}": {
+      "put": {
+        "tags": [
+          "Sahifa matnlarini boshqarish"
+        ],
+        "summary": "Sahifa matnini yaratish yoki yangilash",
+        "description": "Bir kontent turi uchun yagona matn saqlanadi.",
+        "operationId": "upsert",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ABOUT_WE",
+                "LOGIN_PAGE"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagedContentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedContentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Sahifa matnlarini boshqarish"
+        ],
+        "summary": "Sahifa matnini o‘chirish",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ABOUT_WE",
+                "LOGIN_PAGE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/categories/{id}": {
+      "put": {
+        "tags": [
+          "Admin — Kategoriyalar"
+        ],
+        "summary": "Kategoriyani tahrirlash",
+        "operationId": "updateCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Admin — Kategoriyalar"
+        ],
+        "summary": "Kategoriyani arxivlash",
+        "description": "Kategoriyani o‘chirmasdan faol holatini o‘chiradi.",
+        "operationId": "archiveCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/categories/{categoryId}/attempts": {
+      "post": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "40 savollik imtihonni boshlash",
+        "description": "Profilingizda tanlangan kasb yo‘nalishidagi testni boshlaydi. Yo‘nalishda 40 ta faol savol bo‘lishi kerak. Kamida 35 ta to‘g‘ri javob sertifikat beradi.",
+        "operationId": "start",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "description": "Выбранный professionId из GET /api/profile",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/attempts/{attemptId}/save": {
+      "post": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "Imtihonni keyin davom ettirish uchun saqlash",
+        "description": "Javoblar allaqachon avtomatik saqlanadi. Bu endpoint urinishni ro‘yxatga belgilaydi; imtihon vaqti to‘xtamaydi.",
+        "operationId": "save",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "description": "ID из ответа запуска теста либо content[].id из GET /api/tests/results",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Состояние попытки не позволяет выполнить действие",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/attempts/{attemptId}/resume": {
+      "post": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "Saqlangan imtihonni davom ettirish",
+        "description": "Savollar va saqlangan javoblarni qaytaradi. Muddati o‘tgan urinish davom ettirilmaydi.",
+        "operationId": "resume",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "description": "ID из ответа запуска теста либо content[].id из GET /api/tests/results",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Состояние попытки не позволяет выполнить действие",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/attempts/{attemptId}/finish": {
+      "post": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "Imtihonni yakunlash",
+        "description": "40 savoldan kamida 35 tasi to‘g‘ri bo‘lsa, sertifikat avtomatik beriladi. Ball serverda hisoblanadi; takroriy yakunlash natijani o‘zgartirmaydi.",
+        "operationId": "finish",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "description": "ID из ответа запуска теста либо content[].id из GET /api/tests/results",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Состояние попытки не позволяет выполнить действие",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/support/requests": {
+      "get": {
+        "tags": [
+          "Qayta aloqa"
+        ],
+        "summary": "Barcha murojaatlarni ko‘rish",
+        "description": "Nickname, email yoki telefon bo‘yicha qidirish mumkin.",
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SupportRequestView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Qayta aloqa"
+        ],
+        "summary": "Murojaat yoki fikr qoldirish",
+        "description": "PHONE_CALL, APPLICATION yoki FEEDBACK turidan foydalaning.",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportRequestView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/profile/avatar": {
+      "post": {
+        "tags": [
+          "Profil"
+        ],
+        "summary": "Avatar yuklash",
+        "description": "PNG, JPEG yoki WebP rasm faylini yuklaydi; maksimal hajm 3 MB.",
+        "operationId": "avatar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Autentifikatsiya"
+        ],
+        "summary": "Зарегистрировать пользователя",
+        "description": "Создаёт USER. Замените email и телефон на свои уникальные значения; разрешён адрес @gmail.com. Перед началом экзамена дополните профиль и выберите professionId.",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              },
+              "examples": {
+                "newUser": {
+                  "summary": "Замените email и телефон на уникальные",
+                  "value": {
+                    "email": "new.student@gmail.com",
+                    "confirmPassword": "NewUserPass123!",
+                    "phone": "+998900001234",
+                    "firstName": "Алишер",
+                    "nickname": "new-student",
+                    "lastName": "Каримов",
+                    "offerAccepted": true,
+                    "password": "NewUserPass123!"
+                  }
+                }
+              },
+              "example": null
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email или телефон уже зарегистрирован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/password/reset": {
+      "post": {
+        "tags": [
+          "Autentifikatsiya"
+        ],
+        "summary": "Parolni tiklash",
+        "description": "SMS yoki email provayderi sozlanmagan bo‘lsa 503 qaytaradi.",
+        "operationId": "resetPassword",
+        "responses": {
+          "503": {
+            "description": "Parol tiklash provayderi sozlanmagan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/password/forgot": {
+      "post": {
+        "tags": [
+          "Autentifikatsiya"
+        ],
+        "summary": "Parolni tiklash so‘rovi",
+        "description": "SMS yoki email provayderi sozlanmagan bo‘lsa 503 qaytaradi.",
+        "operationId": "forgotPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "503": {
+            "description": "Parol tiklash provayderi sozlanmagan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/password/change": {
+      "post": {
+        "tags": [
+          "Autentifikatsiya"
+        ],
+        "summary": "Parolni almashtirish",
+        "description": "Joriy parolni almashtiradi va oldingi tokenlarni bekor qiladi.",
+        "operationId": "changePassword",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Autentifikatsiya"
+        ],
+        "summary": "Tizimdan chiqish",
+        "description": "Joriy JWT tokenni bekor qiladi.",
+        "operationId": "logout",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Autentifikatsiya"
+        ],
+        "summary": "Войти и получить JWT",
+        "description": "Выберите demoUser или demoAdmin только при запуске профиля demo. В обычном режиме укажите данные своей учётной записи. accessToken вставьте в Authorize без Bearer.",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "examples": {
+                "demoUser": {
+                  "summary": "Локальный demo: обычный пользователь",
+                  "value": {
+                    "password": "DemoUser123!",
+                    "email": "student.demo@gmail.com"
+                  }
+                },
+                "demoAdmin": {
+                  "summary": "Локальный demo: администратор",
+                  "value": {
+                    "password": "DemoAdmin123!",
+                    "email": "admin.demo@example.test"
+                  }
+                }
+              },
+              "example": null
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неверные данные входа или неактивный аккаунт",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Превышен лимит входа; повторите позже",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": [
+          "Admin — Foydalanuvchilar"
+        ],
+        "summary": "Foydalanuvchilarni qidirish va sahifalash",
+        "operationId": "users",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USER",
+                "STAFF",
+                "ADMIN",
+                "SUPER_ADMIN"
+              ]
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageUserView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Admin — Foydalanuvchilar"
+        ],
+        "summary": "Foydalanuvchi yoki Staff akkauntini yaratish",
+        "description": "Faqat ADMIN yoki SUPER_ADMIN ishlata oladi. Unikal @gmail.com email va telefon talab qilinadi. STAFF akkauntini Admin yoki Super Admin yaratadi; ADMIN rolini faqat SUPER_ADMIN bera oladi.",
+        "operationId": "createUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/retake-grants": {
+      "post": {
+        "tags": [
+          "Admin — Imtihon natijalari"
+        ],
+        "summary": "Qayta topshirishga ruxsat berish",
+        "description": "Foydalanuvchi va kategoriya uchun bir martalik ruxsat yaratadi. Faqat ADMIN yoki SUPER_ADMIN.",
+        "operationId": "grantRetake",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantRetakeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/questions": {
+      "get": {
+        "tags": [
+          "Admin — Savollar"
+        ],
+        "summary": "Savollarni filtrlash va sahifalash",
+        "operationId": "questions",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageQuestionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Admin — Savollar"
+        ],
+        "summary": "Savol yaratish",
+        "description": "Staff, Admin yoki Super Admin SINGLE, MULTIPLE yoki NUMERIC javob turidagi savol yaratadi.",
+        "operationId": "createQuestion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/questions/{id}/image": {
+      "post": {
+        "tags": [
+          "Admin — Savollar"
+        ],
+        "summary": "Savolga rasm yuklash",
+        "description": "PNG, JPEG yoki WebP rasm faylini yuklaydi; maksimal hajm 3 MB.",
+        "operationId": "questionImage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/locations/regions": {
+      "get": {
+        "tags": [
+          "Manzil katalogini boshqarish"
+        ],
+        "summary": "Barcha viloyatlarni olish",
+        "operationId": "regions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegionView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Manzil katalogini boshqarish"
+        ],
+        "summary": "Viloyat yaratish",
+        "operationId": "createRegion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/locations/districts": {
+      "get": {
+        "tags": [
+          "Manzil katalogini boshqarish"
+        ],
+        "summary": "Barcha tumanlarni olish",
+        "operationId": "districts",
+        "parameters": [
+          {
+            "name": "regionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DistrictView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Manzil katalogini boshqarish"
+        ],
+        "summary": "Tuman yaratish",
+        "operationId": "createDistrict",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistrictRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistrictView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/categories": {
+      "get": {
+        "tags": [
+          "Admin — Kategoriyalar"
+        ],
+        "summary": "Barcha kategoriyalarni boshqarish",
+        "operationId": "categories",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Admin — Kategoriyalar"
+        ],
+        "summary": "Kategoriya yaratish",
+        "description": "Staff, Admin yoki Super Admin yangi imtihon yo‘nalishini yaratadi.",
+        "operationId": "createCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/attempts/{id}/restore": {
+      "post": {
+        "tags": [
+          "Admin — Imtihon natijalari"
+        ],
+        "summary": "Natijani arxivdan qaytarish",
+        "operationId": "restoreAttempt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/attempts/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Admin — Imtihon natijalari"
+        ],
+        "summary": "Natijani bekor qilish",
+        "description": "Faqat ADMIN yoki SUPER_ADMIN.",
+        "operationId": "cancelAttempt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/attempts/{id}/archive": {
+      "post": {
+        "tags": [
+          "Admin — Imtihon natijalari"
+        ],
+        "summary": "Natijani arxivga ko‘chirish",
+        "description": "Yakunlangan urinishni statusini o‘zgartirmasdan arxivlaydi.",
+        "operationId": "archiveAttempt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/attempts/{id}/approve": {
+      "post": {
+        "tags": [
+          "Admin — Imtihon natijalari"
+        ],
+        "summary": "Natijani tasdiqlash",
+        "description": "Faqat ADMIN yoki SUPER_ADMIN.",
+        "operationId": "approveAttempt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/support/requests/{id}": {
+      "patch": {
+        "tags": [
+          "Qayta aloqa"
+        ],
+        "summary": "Murojaat holati va javobini yangilash",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportRequestUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportRequestView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "tags": [
+          "Profil"
+        ],
+        "summary": "Мой профиль и выбранная профессия",
+        "description": "Возвращает данные владельца JWT. professionId используется как categoryId при запуске теста.",
+        "operationId": "get",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Profil"
+        ],
+        "summary": "Обновить профиль и выбрать профессию",
+        "description": "Отправляйте только изменяемые поля. Для профессии добавьте professionId из GET /api/professions; для региона/района используйте названия из /api/locations. В demo профиль уже заполнен.",
+        "operationId": "update_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdateRequest"
+              },
+              "examples": {
+                "personalDetails": {
+                  "summary": "Пример изменения личных данных",
+                  "value": {
+                    "birthDate": "2000-05-15",
+                    "offerAccepted": true,
+                    "lastName": "Каримов",
+                    "firstName": "Алишер",
+                    "address": "Ташкент, учебный адрес"
+                  }
+                }
+              },
+              "example": null
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users/{userId}/active": {
+      "patch": {
+        "tags": [
+          "Admin — Foydalanuvchilar"
+        ],
+        "summary": "Akkauntni faollashtirish yoki deaktivatsiya qilish",
+        "description": "Faqat ADMIN yoki SUPER_ADMIN ishlata oladi, shu jumladan Staff akkauntini deaktivatsiya qilish.",
+        "operationId": "setUserActive",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/results": {
+      "get": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "Мои завершённые результаты",
+        "description": "Возьмите content[].id для просмотра результата и скачивания PDF. page начинается с 0, size ограничен 100.",
+        "operationId": "myResults",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResultView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/results/{attemptId}": {
+      "get": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "Посмотреть итог одной попытки",
+        "description": "Только собственный завершённый тест. Для PDF используйте этот же attemptId в соседнем PDF endpoint.",
+        "operationId": "result",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "description": "ID из ответа запуска теста либо content[].id из GET /api/tests/results",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Состояние попытки не позволяет выполнить действие",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/results/{attemptId}/pdf": {
+      "get": {
+        "tags": [
+          "PDF: результаты и сертификаты"
+        ],
+        "summary": "Результат теста в PDF",
+        "description": "Сначала завершите попытку. Укажите её attemptId. В Swagger нажмите Execute, затем Download file. В клиенте передавайте Authorization: Bearer <token>; обычная адресная строка браузера JWT не отправляет.",
+        "operationId": "result_1",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "description": "ID из ответа запуска теста либо content[].id из GET /api/tests/results",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "description": "true - скачать; false - открыть в PDF-просмотрщике",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Готовый PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется авторизация",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Документ отсутствует или принадлежит другому пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Попытка ещё не завершена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/attempts/{attemptId}": {
+      "get": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "Faol urinishni ko‘rish",
+        "description": "Faqat urinish egasiga savollar va saqlangan javoblarni beradi; javob kaliti yuborilmaydi.",
+        "operationId": "get_1",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "description": "ID из ответа запуска теста либо content[].id из GET /api/tests/results",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Состояние попытки не позволяет выполнить действие",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tests/attempts/saved": {
+      "get": {
+        "tags": [
+          "Testlar va natijalar"
+        ],
+        "summary": "Saqlangan va davom ettirish mumkin bo‘lgan imtihonlar",
+        "description": "Joriy foydalanuvchining hali yakunlanmagan imtihonlari va javoblari bazada saqlanib turadi.",
+        "operationId": "saved",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedAttemptView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/support/requests/mine": {
+      "get": {
+        "tags": [
+          "Qayta aloqa"
+        ],
+        "summary": "O‘z murojaatlarim",
+        "operationId": "mine",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SupportRequestView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/support/requests/contact": {
+      "get": {
+        "tags": [
+          "Qayta aloqa"
+        ],
+        "summary": "Support bilan bog‘lanish usullari",
+        "operationId": "contact",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportContactView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/recommendations": {
+      "get": {
+        "tags": [
+          "Tavsiyalar"
+        ],
+        "summary": "Kasbga mos test va uning tayyorlik holati",
+        "operationId": "get_2",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/profile/dashboard": {
+      "get": {
+        "tags": [
+          "Profil"
+        ],
+        "summary": "Foydalanuvchi menyusi statistikasi",
+        "description": "Ro‘yxatdan o‘tgan sana, faol vaqt, imtihon natijalari, yo‘nalishlar va sertifikatlar.",
+        "operationId": "dashboard",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDashboardView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/professions": {
+      "get": {
+        "tags": [
+          "Kasblar"
+        ],
+        "summary": "Faol kasblar ro‘yxati",
+        "description": "Profilning Kasb maydonida tanlash uchun to‘liq faol kasblar katalogini qaytaradi.",
+        "operationId": "list_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/locations/regions": {
+      "get": {
+        "tags": [
+          "Manzillar"
+        ],
+        "summary": "Faol viloyatlarni olish",
+        "operationId": "regions_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegionView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/locations/regions/{regionId}/districts": {
+      "get": {
+        "tags": [
+          "Manzillar"
+        ],
+        "summary": "Viloyat bo‘yicha faol tumanlarni olish",
+        "operationId": "districtsForRegion",
+        "parameters": [
+          {
+            "name": "regionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DistrictView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/locations/districts": {
+      "get": {
+        "tags": [
+          "Manzillar"
+        ],
+        "summary": "Faol tumanlar ro‘yxati",
+        "description": "`regionId` berilsa, natija shu viloyat bilan cheklanadi.",
+        "operationId": "districts_1",
+        "parameters": [
+          {
+            "name": "regionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DistrictView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/content/{type}": {
+      "get": {
+        "tags": [
+          "Ommaviy sahifa matnlari"
+        ],
+        "summary": "Ommaviy sahifa matnini olish",
+        "description": "Mavjud matn bo‘lmasa, bo‘sh content qaytariladi.",
+        "operationId": "get_3",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ABOUT_WE",
+                "LOGIN_PAGE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedContentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/certificates": {
+      "get": {
+        "tags": [
+          "Sertifikatlar"
+        ],
+        "summary": "Мои действующие сертификаты",
+        "description": "Возьмите certificateNumber для просмотра, публичной проверки или PDF сертификата.",
+        "operationId": "mine_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CertificateView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/certificates/{certificateNumber}": {
+      "get": {
+        "tags": [
+          "Sertifikatlar"
+        ],
+        "summary": "Sertifikat tafsiloti",
+        "description": "Faqat sertifikat egasi ko‘ra oladi.",
+        "operationId": "mine_2",
+        "parameters": [
+          {
+            "name": "certificateNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/certificates/{certificateNumber}/pdf": {
+      "get": {
+        "tags": [
+          "PDF: результаты и сертификаты"
+        ],
+        "summary": "Сертификат в PDF",
+        "description": "Номер certificateNumber возьмите из GET /api/certificates. Отозванный сертификат явно помечается в документе.",
+        "operationId": "certificate",
+        "parameters": [
+          {
+            "name": "certificateNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "description": "true - скачать; false - открыть в PDF-просмотрщике",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Готовый PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется авторизация",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Документ отсутствует или принадлежит другому пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/certificates/verify/{certificateNumber}": {
+      "get": {
+        "tags": [
+          "Sertifikatlar"
+        ],
+        "summary": "Публично проверить сертификат",
+        "description": "Авторизация не требуется. valid=false означает, что сертификат отозван.",
+        "operationId": "verify",
+        "parameters": [
+          {
+            "name": "certificateNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "tags": [
+          "Kategoriyalar"
+        ],
+        "summary": "Faol kasb va test yo‘nalishlari",
+        "description": "Kasb tanlanmagan bo‘lsa katalogni qaytaradi; login qilingan foydalanuvchida kasb tanlangan bo‘lsa faqat shu kasb testini ko‘rsatadi.",
+        "operationId": "list_2",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard": {
+      "get": {
+        "tags": [
+          "Admin — Boshqaruv paneli"
+        ],
+        "summary": "Dashboard statistikasi",
+        "operationId": "dashboard_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/content": {
+      "get": {
+        "tags": [
+          "Sahifa matnlarini boshqarish"
+        ],
+        "summary": "Boshqariladigan matnlarni olish",
+        "operationId": "list_3",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ManagedContentView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/attempts": {
+      "get": {
+        "tags": [
+          "Admin — Imtihon natijalari"
+        ],
+        "summary": "Test urinishlarini qidirish",
+        "operationId": "attempts",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN_PROGRESS",
+                "PENDING",
+                "APPROVED",
+                "CANCELLED",
+                "EXPIRED"
+              ]
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageAdminAttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/attempts/{id}": {
+      "get": {
+        "tags": [
+          "Admin — Imtihon natijalari"
+        ],
+        "summary": "Urinish tafsilotlari va javoblarini ko‘rish",
+        "operationId": "attempt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Объект отсутствует или недоступен текущему пользователю",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/archive": {
+      "get": {
+        "tags": [
+          "Admin — Imtihon natijalari"
+        ],
+        "summary": "Arxivlangan natijalar ro‘yxati",
+        "operationId": "archivedAttempts",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN_PROGRESS",
+                "PENDING",
+                "APPROVED",
+                "CANCELLED",
+                "EXPIRED"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageAdminAttemptView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректные параметры или тело запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Нужен действующий JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав для административной операции",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnswerRequest": {
+        "type": "object",
+        "description": "SINGLE/MULTIPLE: ID вариантов из текущей попытки. NUMERIC: только numericValue. Пустой ответ очищает выбор.",
+        "properties": {
+          "selectedOptionIds": {
+            "type": "array",
+            "description": "questions[].options[].id текущей попытки. Для SINGLE максимум один ID; [] очищает выбор.",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "maxItems": 20,
+            "minItems": 0,
+            "uniqueItems": true
+          },
+          "numericValue": {
+            "type": "number",
+            "description": "Только для NUMERIC: до 14 целых цифр и 6 знаков после точки",
+            "example": 12.5
+          }
+        }
+      },
+      "AttemptView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "PENDING",
+              "APPROVED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deadlineAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalQuestions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "correctAnswers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "number"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestQuestionView"
+            }
+          }
+        }
+      },
+      "TestOptionView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "TestQuestionView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "body": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "answerType": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MULTIPLE",
+              "NUMERIC"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestOptionView"
+            }
+          },
+          "selectedOptionIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "uniqueItems": true
+          },
+          "numericValue": {
+            "type": "number"
+          }
+        }
+      },
+      "AdminUserUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 0,
+            "pattern": "^$|^\\+?[0-9 ()\\-]{7,24}$"
+          },
+          "nickname": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "STAFF",
+              "ADMIN",
+              "SUPER_ADMIN"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "STAFF",
+              "ADMIN",
+              "SUPER_ADMIN"
+            ]
+          },
+          "gender": {
+            "type": "string"
+          },
+          "offerAccepted": {
+            "type": "boolean"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "region": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "professionId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID выбранной профессии; передаётся как categoryId при запуске теста"
+          },
+          "professionName": {
+            "type": "string"
+          }
+        }
+      },
+      "OptionInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 0
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "correct": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuestionRequest": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 0
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "difficulty": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 0
+          },
+          "answerType": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MULTIPLE",
+              "NUMERIC"
+            ]
+          },
+          "numericAnswer": {
+            "type": "number"
+          },
+          "numericTolerance": {
+            "type": "number",
+            "minimum": 0
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OptionInput"
+            },
+            "maxItems": 20,
+            "minItems": 0
+          }
+        },
+        "required": [
+          "answerType",
+          "body",
+          "categoryId",
+          "difficulty"
+        ]
+      },
+      "OptionView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "correct": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuestionView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "body": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "string"
+          },
+          "answerType": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MULTIPLE",
+              "NUMERIC"
+            ]
+          },
+          "numericAnswer": {
+            "type": "number"
+          },
+          "numericTolerance": {
+            "type": "number"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OptionView"
+            }
+          },
+          "authorId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "editorId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RegionRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 0
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "RegionView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DistrictRequest": {
+        "type": "object",
+        "properties": {
+          "regionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 0
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "regionId"
+        ]
+      },
+      "DistrictView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "regionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "regionName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ManagedContentRequest": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "ManagedContentView": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ABOUT_WE",
+              "LOGIN_PAGE"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CategoryRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 0
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 600,
+            "minimum": 1
+          },
+          "questionCount": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 40,
+            "minimum": 40
+          },
+          "additionalQuestionCount": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 0,
+            "minimum": 0
+          },
+          "retakeDelayHours": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 8760,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CategoryView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "questionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "additionalQuestionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "retakeDelayHours": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CategoryScore": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "correctAnswers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalQuestions": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ResultView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID попытки, используемый в /api/tests/results/{attemptId}/pdf"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "PENDING - завершён и ожидает проверки; APPROVED - подтверждён; CANCELLED - отменён; EXPIRED - истекло время",
+            "enum": [
+              "IN_PROGRESS",
+              "PENDING",
+              "APPROVED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "elapsedSeconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "correctAnswers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalQuestions": {
+            "type": "integer",
+            "format": "int32",
+            "example": 40
+          },
+          "score": {
+            "type": "number",
+            "description": "Процент правильных ответов, рассчитанный сервером",
+            "example": 95.0
+          },
+          "categoryResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryScore"
+            }
+          }
+        }
+      },
+      "SupportRequestCreate": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "PHONE_CALL|APPLICATION|FEEDBACK"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 0
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 0,
+            "pattern": "^$|^\\+?[0-9 ()\\-]{7,24}$"
+          }
+        },
+        "required": [
+          "message",
+          "subject",
+          "type"
+        ]
+      },
+      "SupportRequestView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "staffReply": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "description": "Новый пользователь. Email и телефон должны быть уникальны; разрешён email @gmail.com.",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "new.student@gmail.com",
+            "maxLength": 254,
+            "minLength": 0,
+            "pattern": "(?i)^[^\\s@]+@gmail\\.com$"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Ваш уникальный телефон в международном формате",
+            "example": "+998900001234",
+            "maxLength": 32,
+            "minLength": 0,
+            "pattern": "^\\+?[0-9 ()\\-]{7,24}$"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "NewUserPass123!",
+            "maxLength": 72,
+            "minLength": 6
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Алишер",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Каримов",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "nickname": {
+            "type": "string",
+            "example": "new-student",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "offerAccepted": {
+            "type": "boolean",
+            "description": "Для регистрации нужно принять оферту",
+            "example": true
+          },
+          "gender": {
+            "type": "string",
+            "pattern": "^(|FEMALE|MALE|OTHER)$"
+          },
+          "confirmPassword": {
+            "type": "string",
+            "format": "password",
+            "example": "NewUserPass123!",
+            "maxLength": 72,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "phone"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Скопируйте только это значение в Authorize без префикса Bearer"
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserView"
+          }
+        }
+      },
+      "MessageView": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1
+          },
+          "newPassword": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 6
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email аккаунта; для старых аккаунтов допускается телефон. Пример работает в профиле demo.",
+            "example": "student.demo@gmail.com",
+            "maxLength": 254,
+            "minLength": 0
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "DemoUser123!",
+            "maxLength": 72,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "AdminUserRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "minLength": 0,
+            "pattern": "(?i)^[^\\s@]+@gmail\\.com$"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 0,
+            "pattern": "^\\+?[0-9 ()\\-]{7,24}$"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 6
+          },
+          "nickname": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "STAFF",
+              "ADMIN",
+              "SUPER_ADMIN"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "phone",
+          "role"
+        ]
+      },
+      "GrantRetakeRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "categoryId",
+          "userId"
+        ]
+      },
+      "AdminAttemptView": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/ResultView"
+          },
+          "userPhone": {
+            "type": "string"
+          },
+          "userEmail": {
+            "type": "string"
+          },
+          "userNickname": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminQuestionResult"
+            }
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminQuestionResult": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "body": {
+            "type": "string"
+          },
+          "answerType": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MULTIPLE",
+              "NUMERIC"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OptionView"
+            }
+          },
+          "selectedOptionIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "uniqueItems": true
+          },
+          "expectedNumericValue": {
+            "type": "number"
+          },
+          "submittedNumericValue": {
+            "type": "number"
+          },
+          "correct": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SupportRequestUpdate": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "OPEN|IN_PROGRESS|CLOSED"
+          },
+          "staffReply": {
+            "type": "string",
+            "maxLength": 3000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ProfileUpdateRequest": {
+        "type": "object",
+        "description": "Частичное обновление профиля: пропускайте поля, которые менять не нужно.",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "example": "Алишер",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Каримов",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 0,
+            "pattern": "^$|^\\+?[0-9 ()\\-]{7,24}$"
+          },
+          "nickname": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "gender": {
+            "type": "string",
+            "pattern": "^(|FEMALE|MALE|OTHER)$"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2000-05-15"
+          },
+          "region": {
+            "type": "string",
+            "description": "name из GET /api/locations/regions",
+            "maxLength": 120,
+            "minLength": 0
+          },
+          "district": {
+            "type": "string",
+            "description": "name района выбранного региона из /api/locations",
+            "maxLength": 120,
+            "minLength": 0
+          },
+          "address": {
+            "type": "string",
+            "example": "Ташкент, учебный адрес",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "offerAccepted": {
+            "type": "boolean",
+            "example": true
+          },
+          "professionId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "id активной профессии из GET /api/professions",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "UserStatusRequest": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageResultView": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultView"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "unpaged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "boolean"
+          },
+          "sorted": {
+            "type": "boolean"
+          },
+          "unsorted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "description": "Единый JSON-ответ при ошибке, в том числе при запросе PDF",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "ATTEMPT_NOT_FINISHED"
+          },
+          "message": {
+            "type": "string",
+            "example": "This attempt has not been finished"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "SavedAttemptView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "PENDING",
+              "APPROVED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deadlineAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalQuestions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "answeredQuestions": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SupportContactView": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RecommendationView": {
+        "type": "object",
+        "properties": {
+          "professionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "professionName": {
+            "type": "string"
+          },
+          "tests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendedTestView"
+            }
+          }
+        }
+      },
+      "RecommendedTestView": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "profession": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "activeQuestionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requiredQuestionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ready": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CertificateView": {
+        "type": "object",
+        "properties": {
+          "certificateNumber": {
+            "type": "string",
+            "description": "Номер для публичной проверки и /api/certificates/{certificateNumber}/pdf"
+          },
+          "holderName": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "correctAnswers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalQuestions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "number"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserDashboardView": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserView"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activeDurationSeconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalExams": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "passedExams": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failedExams": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workDirections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "certificates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificateView"
+            }
+          }
+        }
+      },
+      "PageUserView": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserView"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageQuestionView": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionView"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DashboardView": {
+        "type": "object",
+        "properties": {
+          "totalUsers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activeUsers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activeCategories": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalQuestions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pendingAttempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "approvedAttempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cancelledAttempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expiredAttempts": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PageAdminAttemptView": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminAttemptView"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "Вставьте accessToken из ответа login без слова Bearer. Swagger добавит префикс автоматически.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "h2_tests": 45,
+  "postgres_tests": 28,
+  "http_checks": 26,
+  "jar_sha256": "a46eecf949174d5007a6e95bede2850ba242f564c60496892f7994018696c5f5",
+  "jar_bytes": 74367280,
+  "pdf_summary": "<b>45 Java-тестов</b> на H2 прошли повторно; <b>28 проверок PostgreSQL</b> относятся к предыдущему этапу. Запуск из target/classes с runtime-зависимостями прошёл <b>26 HTTP-проверок</b>. JAR пересобран и проверен; подробности: docs/VERIFICATION.md.",
+  "servlet_api_fix": {
+    "api": "jakarta.servlet:jakarta.servlet-api:6.1.0",
+    "scope": "provided",
+    "standalone_api_excluded_from_boot_jar": true,
+    "runtime_provider": "tomcat-embed-core:11.0.24",
+    "h2_tests_repeated": 45,
+    "http_checks_repeated": 26,
+    "postgres_tests_repeated": false
+  },
+  "web_server_fix": {
+    "web_starter": "spring-boot-starter-webmvc:4.1.1",
+    "explicit_server": "spring-boot-starter-tomcat:4.1.1",
+    "h2_tests_repeated": 45,
+    "http_checks_repeated": 26,
+    "http_launch_mode": "target/classes + runtime dependencies via spring-boot:run",
+    "test_classpath": false,
+    "profile": "demo",
+    "postgres_tests_repeated": false,
+    "new_jar_started_separately": false,
+    "new_jar_crc_and_embedded_dependencies_verified": true
+  }
+}

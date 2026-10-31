@@ -1,0 +1,73 @@
+{
+  "database": "H2 2.4.240",
+  "java": "17.0.20",
+  "command": "./mvnw clean verify",
+  "web_starter": "spring-boot-starter-webmvc:4.1.1",
+  "server": "spring-boot-starter-tomcat:4.1.1",
+  "servlet_api": "6.1.0 (provided)",
+  "suites": [
+    {
+      "suite": "com.example.amaliyot.AmaliyotApplicationTests",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.amaliyot.BackendWorkflowTests",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.amaliyot.DemoProfileTests",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.amaliyot.DomainRegressionTests",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.amaliyot.PdfApiIntegrationTests",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.amaliyot.PdfExportTests",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.amaliyot.SecurityRegressionTests",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.amaliyot.SwaggerIntegrationTests",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.amaliyot.security.SecurityComponentsTests",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE test_attempts ADD COLUMN saved_at TIMESTAMP WITH TIME ZONE;

@@ -1,0 +1,13 @@
+.git
+.idea
+.env
+.env.*
+target
+data
+uploads
+logs
+*.log
+docs
+tmp
+
+dist

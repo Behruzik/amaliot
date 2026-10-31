@@ -1,0 +1,132 @@
+[
+  {
+    "method": "GET",
+    "path": "/actuator/health",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/v3/api-docs",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/login",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/profile",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/tests/results?size=100",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/tests/results/1/pdf",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/certificates",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/certificates/GEA-79CF2070-0B36-4212-8290-AFAC007DF6AA/pdf?download=true",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/certificates/verify/GEA-79CF2070-0B36-4212-8290-AFAC007DF6AA",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/tests/results/1/pdf",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/dashboard",
+    "status": 403
+  },
+  {
+    "method": "POST",
+    "path": "/api/tests/categories/11/attempts",
+    "status": 200
+  },
+  {
+    "method": "PUT",
+    "path": "/api/tests/attempts/2/questions/41/answer",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/tests/attempts/2",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "path": "/api/tests/attempts/2/save",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "path": "/api/tests/attempts/2/resume",
+    "status": 200
+  },
+  {
+    "method": "PUT",
+    "path": "/api/tests/attempts/2/questions/41/answer",
+    "status": 400
+  },
+  {
+    "method": "GET",
+    "path": "/api/tests/results/2/pdf",
+    "status": 409
+  },
+  {
+    "method": "POST",
+    "path": "/api/tests/attempts/2/finish",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "path": "/api/tests/attempts/2/finish",
+    "status": 200
+  },
+  {
+    "method": "PUT",
+    "path": "/api/tests/attempts/2/questions/41/answer",
+    "status": 409
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/login",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/dashboard",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/tests/results/1/pdf",
+    "status": 404
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/logout",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/profile",
+    "status": 401
+  }
+]

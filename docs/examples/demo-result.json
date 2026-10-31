@@ -1,0 +1,19 @@
+{
+  "id": 1,
+  "userId": 2,
+  "categoryName": "Демо: основы измерений / O‘lchash asoslari",
+  "status": "PENDING",
+  "startedAt": "2026-10-30T14:53:20.662237Z",
+  "completedAt": "2026-10-30T14:53:21.419575Z",
+  "elapsedSeconds": 0,
+  "correctAnswers": 38,
+  "totalQuestions": 40,
+  "score": 95.0,
+  "categoryResults": [
+    {
+      "categoryId": 11,
+      "correctAnswers": 38,
+      "totalQuestions": 40
+    }
+  ]
+}
