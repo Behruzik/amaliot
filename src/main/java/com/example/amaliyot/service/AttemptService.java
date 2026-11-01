@@ -4,6 +4,8 @@ import com.example.amaliyot.domain.AnswerType;
 import com.example.amaliyot.domain.AttemptStatus;
 import com.example.amaliyot.domain.Entities.*;
 import com.example.amaliyot.repository.*;
+import com.example.amaliyot.service.answer.AnswerEvaluator;
+import com.example.amaliyot.service.answer.StrategyRegistry;
 import com.example.amaliyot.web.ApiDtos.*;
 import com.example.amaliyot.web.ApiException;
 import org.springframework.data.domain.Page;
@@ -30,13 +32,15 @@ public class AttemptService {
     private final AttemptAnswerRepository answers;
     private final RetakeGrantRepository retakeGrants;
     private final CertificateService certificates;
+    private final StrategyRegistry<AnswerType, AnswerEvaluator> answerEvaluators;
 
     public AttemptService(UserAccountRepository users, CategoryRepository categories, QuestionRepository questions,
                          TestAttemptRepository attempts, AttemptAnswerRepository answers, RetakeGrantRepository retakeGrants,
-                         CertificateService certificates) {
+                         CertificateService certificates, List<AnswerEvaluator> answerEvaluators) {
         this.users = users; this.categories = categories; this.questions = questions;
         this.attempts = attempts; this.answers = answers; this.retakeGrants = retakeGrants;
         this.certificates = certificates;
+        this.answerEvaluators = new StrategyRegistry<>(answerEvaluators, AnswerEvaluator::answerType);
     }
 
     @Transactional(noRollbackFor = ApiException.class)
@@ -168,18 +172,9 @@ public class AttemptService {
         }
         AttemptQuestion question = attempt.getQuestions().stream().filter(q -> q.getId().equals(questionId)).findFirst()
                 .orElseThrow(() -> ApiException.notFound("ATTEMPT_QUESTION_NOT_FOUND", "Question was not found in this attempt"));
+        AnswerEvaluator evaluator = answerEvaluators.get(question.getAnswerType());
+        evaluator.validate(question, request);
         Set<Long> selected = request.selectedOptionIds() == null ? Set.of() : new HashSet<>(request.selectedOptionIds());
-        Set<Long> available = question.getOptions().stream().map(AttemptOption::getId).collect(Collectors.toSet());
-        if (!available.containsAll(selected)) throw ApiException.badRequest("INVALID_OPTION", "An answer option does not belong to this question");
-        if (question.getAnswerType() == AnswerType.NUMERIC) {
-            if (!selected.isEmpty()) throw ApiException.badRequest("INVALID_ANSWER", "Numeric questions do not accept option ids");
-            if (request.numericValue() != null && !fitsNumericColumn(request.numericValue()))
-                throw ApiException.badRequest("INVALID_NUMERIC_ANSWER", "Numeric answer supports at most 14 integer digits and 6 decimal places");
-        } else {
-            if (request.numericValue() != null) throw ApiException.badRequest("INVALID_ANSWER", "Choice questions do not accept a numeric answer");
-            if (question.getAnswerType() == AnswerType.SINGLE && selected.size() > 1)
-                throw ApiException.badRequest("INVALID_ANSWER", "Choose at most one answer");
-        }
         AttemptAnswer answer = answers.findByAttemptQuestionId(question.getId()).orElseGet(() -> {
             AttemptAnswer created = new AttemptAnswer(); created.setAttemptQuestion(question); return created;
         });
@@ -251,15 +246,7 @@ public class AttemptService {
     }
 
     private boolean isCorrect(AttemptQuestion question, AttemptAnswer answer) {
-        if (answer == null) return false;
-        if (question.getAnswerType() == AnswerType.NUMERIC) {
-            if (answer.getNumericValue() == null || question.getNumericAnswer() == null) return false;
-            BigDecimal tolerance = question.getNumericTolerance() == null ? BigDecimal.ZERO : question.getNumericTolerance();
-            return answer.getNumericValue().subtract(question.getNumericAnswer()).abs().compareTo(tolerance) <= 0;
-        }
-        Set<Long> expected = question.getOptions().stream().filter(AttemptOption::isCorrect).map(AttemptOption::getId).collect(Collectors.toSet());
-        Set<Long> selected = answer.getSelectedOptionIds() == null ? Set.of() : answer.getSelectedOptionIds();
-        return !expected.isEmpty() && expected.equals(selected);
+        return answerEvaluators.get(question.getAnswerType()).isCorrect(question, answer);
     }
 
     private AttemptView toAttemptView(TestAttempt attempt) {
