@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class CertificateService {
-    public static final int EXAM_QUESTION_COUNT = 40;
-    public static final int PASSING_CORRECT_ANSWERS = 35;
+    public static final int EXAM_QUESTION_COUNT = 16;
+    public static final int PASSING_CORRECT_ANSWERS = 14;
 
     private final CertificateRepository certificates;
 
@@ -28,8 +28,8 @@ public class CertificateService {
 
     @Transactional
     public void issueForPassedAttempt(TestAttempt attempt) {
-        if (attempt.getTotalQuestions() != EXAM_QUESTION_COUNT
-                || attempt.getCorrectAnswers() < PASSING_CORRECT_ANSWERS
+        if (attempt.getTotalQuestions() != attempt.getCategory().getQuestionCount()
+                || attempt.getCorrectAnswers() < passingCorrectAnswers(attempt.getTotalQuestions())
                 || certificates.findByAttemptId(attempt.getId()).isPresent()) {
             return;
         }
@@ -45,6 +45,10 @@ public class CertificateService {
         certificate.setTotalQuestions(attempt.getTotalQuestions());
         certificate.setScore(attempt.getScore());
         certificates.save(certificate);
+    }
+
+    public static int passingCorrectAnswers(int questionCount) {
+        return (int) Math.ceil(questionCount * 0.875d);
     }
 
     @Transactional(readOnly = true)

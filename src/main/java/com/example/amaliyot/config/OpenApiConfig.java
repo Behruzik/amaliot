@@ -49,7 +49,7 @@ public class OpenApiConfig {
                                 `questionId` и `selectedOptionIds` берите из **этой попытки** (`questions[].id` и `questions[].options[].id`).
                                 Для NUMERIC отправляйте `numericValue`; для SINGLE/MULTIPLE - `selectedOptionIds`.
                                 Затем **POST /api/tests/attempts/{attemptId}/finish**. Повторный finish не меняет итог.
-                                Экзамен содержит 40 вопросов; 35 правильных ответов дают сертификат, если попытка не просрочена и не отменена.
+                                Каждый экзамен содержит 16 вопросов, случайно выбранных из общего банка 400 простых вопросов. 14 правильных ответов дают сертификат, если попытка не просрочена и не отменена.
                                 Сохранение попытки не останавливает таймер.
 
                                 ## Локальный демонстрационный режим
@@ -57,7 +57,7 @@ public class OpenApiConfig {
                                 Запуск в PowerShell: `.\\mvnw.cmd "-Dspring-boot.run.profiles=demo" spring-boot:run`.
                                 Пользователь: `student.demo@gmail.com` / `DemoUser123!`.
                                 Администратор: `admin.demo@example.test` / `DemoAdmin123!`.
-                                В demo уже есть готовый профиль, результат 38/40 и сертификат. Эти учётные данные работают только в профиле `demo`.
+                                В demo уже есть готовый профиль, результат 16/16 и сертификат. Эти учётные данные работают только в профиле `demo`.
                                 Для проверки прав попробуйте **GET /api/admin/dashboard** под USER (403), затем войдите под ADMIN и замените токен в Authorize (200).
 
                                 ## Как понимать ответы

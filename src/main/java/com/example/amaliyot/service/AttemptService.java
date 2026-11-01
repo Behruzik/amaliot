@@ -4,6 +4,8 @@ import com.example.amaliyot.domain.AnswerType;
 import com.example.amaliyot.domain.AttemptStatus;
 import com.example.amaliyot.domain.Entities.*;
 import com.example.amaliyot.repository.*;
+import com.example.amaliyot.service.answer.AnswerEvaluator;
+import com.example.amaliyot.service.answer.StrategyRegistry;
 import com.example.amaliyot.web.ApiDtos.*;
 import com.example.amaliyot.web.ApiException;
 import org.springframework.data.domain.Page;
@@ -30,13 +32,15 @@ public class AttemptService {
     private final AttemptAnswerRepository answers;
     private final RetakeGrantRepository retakeGrants;
     private final CertificateService certificates;
+    private final StrategyRegistry<AnswerType, AnswerEvaluator> answerEvaluators;
 
     public AttemptService(UserAccountRepository users, CategoryRepository categories, QuestionRepository questions,
                          TestAttemptRepository attempts, AttemptAnswerRepository answers, RetakeGrantRepository retakeGrants,
-                         CertificateService certificates) {
+                         CertificateService certificates, List<AnswerEvaluator> answerEvaluators) {
         this.users = users; this.categories = categories; this.questions = questions;
         this.attempts = attempts; this.answers = answers; this.retakeGrants = retakeGrants;
         this.certificates = certificates;
+        this.answerEvaluators = new StrategyRegistry<>(answerEvaluators, AnswerEvaluator::answerType);
     }
 
     @Transactional(noRollbackFor = ApiException.class)
@@ -44,10 +48,6 @@ public class AttemptService {
         UserAccount user = users.findByIdForUpdate(userId).orElseThrow(() -> ApiException.notFound("USER_NOT_FOUND", "User was not found"));
         Category category = categories.findById(categoryId).orElseThrow(() -> ApiException.notFound("CATEGORY_NOT_FOUND", "Category was not found"));
         if (!category.isActive()) throw ApiException.conflict("CATEGORY_INACTIVE", "This category is not accepting attempts");
-        if (user.getProfessionCategory() == null)
-            throw ApiException.conflict("PROFILE_PROFESSION_REQUIRED", "Choose your profession in the profile before starting a test");
-        if (!user.getProfessionCategory().getId().equals(categoryId))
-            throw ApiException.forbidden("PROFESSION_CATEGORY_MISMATCH", "You can only take tests for your selected profession");
         if (user.getFirstName() == null || user.getFirstName().isBlank() || user.getLastName() == null || user.getLastName().isBlank()
                 || user.getBirthDate() == null || user.getRegion() == null || user.getRegion().isBlank()
                 || user.getDistrict() == null || user.getDistrict().isBlank() || user.getAddress() == null || user.getAddress().isBlank()
@@ -70,7 +70,7 @@ public class AttemptService {
             }
         }
 
-        List<Question> selected = selectQuestions(category);
+        List<Question> selected = selectQuestions(category, userId);
         // Both supported databases persist timestamps at microsecond precision.
         // Match that precision before returning DTOs so a later GET is identical.
         Instant started = Instant.now().truncatedTo(ChronoUnit.MICROS);
@@ -82,7 +82,7 @@ public class AttemptService {
         for (Question source : selected) {
             AttemptQuestion snapshot = new AttemptQuestion();
             snapshot.setAttempt(attempt); snapshot.setSourceQuestionId(source.getId());
-            snapshot.setSourceCategoryId(source.getCategory().getId()); snapshot.setBody(source.getBody());
+            snapshot.setSourceCategoryId(category.getId()); snapshot.setBody(source.getBody());
             snapshot.setImageUrl(source.getImageUrl()); snapshot.setAnswerType(source.getAnswerType());
             snapshot.setNumericAnswer(source.getNumericAnswer()); snapshot.setNumericTolerance(
                     source.getNumericTolerance() == null ? BigDecimal.ZERO : source.getNumericTolerance());
@@ -99,14 +99,25 @@ public class AttemptService {
         return toAttemptView(attempt);
     }
 
-    private List<Question> selectQuestions(Category category) {
-        List<Question> inCategory = new ArrayList<>(questions.findByCategoryIdAndActiveTrue(category.getId()));
-        Collections.shuffle(inCategory);
-        if (inCategory.size() < CertificateService.EXAM_QUESTION_COUNT) {
+    private List<Question> selectQuestions(Category category, Long userId) {
+        List<Question> pool = new ArrayList<>(questions.findByGlobalPoolTrueAndActiveTrueAndDifficulty(
+                com.example.amaliyot.domain.Difficulty.EASY));
+        // Keeps isolated legacy/test databases usable; a fresh non-test database is
+        // populated with the shared bank by GlobalEasyQuestionSeeder at startup.
+        if (pool.isEmpty()) pool.addAll(questions.findByCategoryIdAndActiveTrue(category.getId()));
+        if (pool.size() < category.getQuestionCount()) {
             throw ApiException.conflict("QUESTION_BANK_INSUFFICIENT",
-                    "The direction needs at least 40 active questions to start an exam");
+                    "The shared easy question bank does not contain enough active questions");
         }
-        return new ArrayList<>(inCategory.subList(0, CertificateService.EXAM_QUESTION_COUNT));
+        attempts.findByUserId(userId).stream().max(Comparator.comparing(TestAttempt::getCreatedAt))
+                .ifPresent(previous -> attempts.findWithSnapshotById(previous.getId()).ifPresent(snapshot -> {
+                    Set<Long> previousIds = snapshot.getQuestions().stream().map(AttemptQuestion::getSourceQuestionId)
+                            .filter(Objects::nonNull).collect(Collectors.toSet());
+                    if (pool.size() - previousIds.size() >= category.getQuestionCount())
+                        pool.removeIf(question -> previousIds.contains(question.getId()));
+                }));
+        Collections.shuffle(pool);
+        return new ArrayList<>(pool.subList(0, category.getQuestionCount()));
     }
 
     @Transactional
@@ -161,18 +172,9 @@ public class AttemptService {
         }
         AttemptQuestion question = attempt.getQuestions().stream().filter(q -> q.getId().equals(questionId)).findFirst()
                 .orElseThrow(() -> ApiException.notFound("ATTEMPT_QUESTION_NOT_FOUND", "Question was not found in this attempt"));
+        AnswerEvaluator evaluator = answerEvaluators.get(question.getAnswerType());
+        evaluator.validate(question, request);
         Set<Long> selected = request.selectedOptionIds() == null ? Set.of() : new HashSet<>(request.selectedOptionIds());
-        Set<Long> available = question.getOptions().stream().map(AttemptOption::getId).collect(Collectors.toSet());
-        if (!available.containsAll(selected)) throw ApiException.badRequest("INVALID_OPTION", "An answer option does not belong to this question");
-        if (question.getAnswerType() == AnswerType.NUMERIC) {
-            if (!selected.isEmpty()) throw ApiException.badRequest("INVALID_ANSWER", "Numeric questions do not accept option ids");
-            if (request.numericValue() != null && !fitsNumericColumn(request.numericValue()))
-                throw ApiException.badRequest("INVALID_NUMERIC_ANSWER", "Numeric answer supports at most 14 integer digits and 6 decimal places");
-        } else {
-            if (request.numericValue() != null) throw ApiException.badRequest("INVALID_ANSWER", "Choice questions do not accept a numeric answer");
-            if (question.getAnswerType() == AnswerType.SINGLE && selected.size() > 1)
-                throw ApiException.badRequest("INVALID_ANSWER", "Choose at most one answer");
-        }
         AttemptAnswer answer = answers.findByAttemptQuestionId(question.getId()).orElseGet(() -> {
             AttemptAnswer created = new AttemptAnswer(); created.setAttemptQuestion(question); return created;
         });
@@ -244,15 +246,7 @@ public class AttemptService {
     }
 
     private boolean isCorrect(AttemptQuestion question, AttemptAnswer answer) {
-        if (answer == null) return false;
-        if (question.getAnswerType() == AnswerType.NUMERIC) {
-            if (answer.getNumericValue() == null || question.getNumericAnswer() == null) return false;
-            BigDecimal tolerance = question.getNumericTolerance() == null ? BigDecimal.ZERO : question.getNumericTolerance();
-            return answer.getNumericValue().subtract(question.getNumericAnswer()).abs().compareTo(tolerance) <= 0;
-        }
-        Set<Long> expected = question.getOptions().stream().filter(AttemptOption::isCorrect).map(AttemptOption::getId).collect(Collectors.toSet());
-        Set<Long> selected = answer.getSelectedOptionIds() == null ? Set.of() : answer.getSelectedOptionIds();
-        return !expected.isEmpty() && expected.equals(selected);
+        return answerEvaluators.get(question.getAnswerType()).isCorrect(question, answer);
     }
 
     private AttemptView toAttemptView(TestAttempt attempt) {

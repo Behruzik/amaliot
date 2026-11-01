@@ -27,7 +27,8 @@ public class ProfessionController {
                 .map(category -> new CategoryView(category.getId(), category.getName(), category.getDescription(),
                         category.getImageUrl(), category.isActive(), category.getDurationMinutes(),
                         category.getQuestionCount(), category.getAdditionalQuestionCount(),
-                        category.getRetakeDelayHours()))
+                        category.getRetakeDelayHours(), null, null, null, null, null, null,
+                        category.getCreatedAt(), category.getUpdatedAt(), category.getDeletedAt()))
                 .toList();
     }
 }

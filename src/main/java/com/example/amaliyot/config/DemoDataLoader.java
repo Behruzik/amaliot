@@ -1,6 +1,5 @@
 package com.example.amaliyot.config;
 
-import com.example.amaliyot.domain.AnswerType;
 import com.example.amaliyot.domain.Entities.*;
 import com.example.amaliyot.domain.Role;
 import com.example.amaliyot.repository.*;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -34,7 +32,6 @@ public class DemoDataLoader implements ApplicationRunner {
     private final Environment environment;
     private final UserAccountRepository users;
     private final CategoryRepository categories;
-    private final QuestionRepository questions;
     private final GeographicRegionRepository regions;
     private final GeographicDistrictRepository districts;
     private final TestAttemptRepository attempts;
@@ -42,11 +39,11 @@ public class DemoDataLoader implements ApplicationRunner {
     private final AttemptService exams;
 
     public DemoDataLoader(DataSource dataSource, Environment environment, UserAccountRepository users,
-                          CategoryRepository categories, QuestionRepository questions,
+                          CategoryRepository categories,
                           GeographicRegionRepository regions, GeographicDistrictRepository districts,
                           TestAttemptRepository attempts, PasswordStorageService passwords, AttemptService exams) {
         this.dataSource = dataSource; this.environment = environment; this.users = users;
-        this.categories = categories; this.questions = questions; this.regions = regions;
+        this.categories = categories; this.regions = regions;
         this.districts = districts; this.attempts = attempts; this.passwords = passwords; this.exams = exams;
     }
 
@@ -66,7 +63,7 @@ public class DemoDataLoader implements ApplicationRunner {
                     Category created = new Category();
                     created.setName(CATEGORY_NAME);
                     created.setDescription("Синтетические вопросы только для проверки API; это не учебный экзамен.");
-                    created.setDurationMinutes(60); created.setQuestionCount(40);
+                    created.setDurationMinutes(60); created.setQuestionCount(16);
                     created.setAdditionalQuestionCount(0); created.setRetakeDelayHours(0);
                     return categories.saveAndFlush(created);
                 });
@@ -80,44 +77,18 @@ public class DemoDataLoader implements ApplicationRunner {
         }
         UserAccount admin = account("admin.demo@example.test", "+998900000001", "DemoAdmin123!", Role.SUPER_ADMIN, category);
         UserAccount student = account("student.demo@gmail.com", "+998900000002", "DemoUser123!", Role.USER, category);
-        if (questions.findByCategoryIdAndActiveTrue(category.getId()).isEmpty()) {
-            for (int number = 1; number <= 40; number++) {
-                Question question = new Question();
-                question.setCategory(category); question.setAuthor(admin); question.setDifficulty("EASY");
-                if (number <= 30) {
-                    question.setBody("Демо-вопрос " + number + ": сколько будет " + number + " + 2?");
-                    question.setAnswerType(AnswerType.SINGLE);
-                    question.replaceOptions(List.of(option(Integer.toString(number + 2), true),
-                            option(Integer.toString(number + 3), false)));
-                } else if (number <= 35) {
-                    question.setBody("Демо-вопрос " + number + ": выберите оба чётных числа.");
-                    question.setAnswerType(AnswerType.MULTIPLE);
-                    question.replaceOptions(List.of(option("2", true), option("4", true), option("3", false)));
-                } else {
-                    question.setBody("Демо-вопрос " + number + ": введите результат " + number + " / 2.");
-                    question.setAnswerType(AnswerType.NUMERIC);
-                    question.setNumericAnswer(BigDecimal.valueOf(number).divide(BigDecimal.valueOf(2)));
-                    question.setNumericTolerance(new BigDecimal("0.01"));
-                }
-                questions.save(question);
-            }
-            questions.flush();
-        }
         if (attempts.findByUserId(student.getId()).isEmpty()) {
             var view = exams.start(student.getId(), category.getId());
             TestAttempt snapshot = attempts.findWithSnapshotById(view.id()).orElseThrow();
-            int answered = 0;
             for (AttemptQuestion question : snapshot.getQuestions()) {
-                if (answered++ >= 38) break;
                 Set<Long> selected = question.getOptions().stream().filter(AttemptOption::isCorrect)
                         .map(AttemptOption::getId).collect(Collectors.toSet());
                 exams.answer(student.getId(), view.id(), question.getId(),
-                        new AnswerRequest(selected, question.getAnswerType() == AnswerType.NUMERIC
-                                ? question.getNumericAnswer() : null));
+                        new AnswerRequest(selected, null));
             }
             exams.finish(student.getId(), view.id());
         }
-        log.warn("DEMO profile is active: disposable database, synthetic questions, public demo credentials. See README.md.");
+        log.warn("DEMO profile is active: disposable database, a shared bank of 400 generated beginner questions, and public demo credentials. See README.md.");
     }
 
     private UserAccount account(String email, String phone, String password, Role role, Category category) {
@@ -131,7 +102,4 @@ public class DemoDataLoader implements ApplicationRunner {
         });
     }
 
-    private static AnswerOption option(String text, boolean correct) {
-        AnswerOption option = new AnswerOption(); option.setLabel(text); option.setCorrect(correct); return option;
-    }
 }

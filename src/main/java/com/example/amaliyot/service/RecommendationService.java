@@ -13,8 +13,6 @@ import java.util.List;
 
 @Service
 public class RecommendationService {
-    private static final int EXAM_QUESTION_COUNT = 40;
-
     private final UserAccountRepository users;
     private final QuestionRepository questions;
     public RecommendationService(UserAccountRepository users, QuestionRepository questions) {
@@ -30,10 +28,12 @@ public class RecommendationService {
             throw ApiException.conflict("PROFILE_PROFESSION_REQUIRED", "Choose your profession in the profile to receive recommendations");
 
         var profession = user.getProfessionCategory();
-        int activeQuestions = questions.findByCategoryIdAndActiveTrue(profession.getId()).size();
+        int activeQuestions = questions.findByGlobalPoolTrueAndActiveTrueAndDifficulty(
+                com.example.amaliyot.domain.Difficulty.EASY).size();
+        if (activeQuestions == 0) activeQuestions = questions.findByCategoryIdAndActiveTrue(profession.getId()).size();
         RecommendedTestView test = new RecommendedTestView(profession.getId(), profession.getName(),
-                profession.getDescription(), activeQuestions, EXAM_QUESTION_COUNT,
-                profession.isActive() && activeQuestions >= EXAM_QUESTION_COUNT);
+                profession.getDescription(), activeQuestions, profession.getQuestionCount(),
+                profession.isActive() && activeQuestions >= profession.getQuestionCount());
 
         return new RecommendationView(profession.getId(), profession.getName(), List.of(test));
     }
